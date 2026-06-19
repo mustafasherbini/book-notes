@@ -1,5 +1,5 @@
 # Working Effectively with Legacy Code
-
+## Part I : The Mechanics of Change
 ### Chapter 1 — Changing Software
 
 * There are 4 reasons to change software: adding a feature, fixing a bug, refactoring, and optimizing. Each should change only what it's supposed to and preserve everything else.
@@ -27,3 +27,22 @@
   4. *Write tests:* Lock down the current behavior before you touch a single line of production logic.
   5. *Change & Refactor:* Ship the new feature, then clean up the design while your tests protect you.
 * **Grow Islands of Safety:** You cannot fix a massive codebase all at once. Write localized tests to create safe "islands" of code during your daily tasks until they merge into safe continents.
+---
+
+### Chapter 3 — Sensing and Separation
+
+
+* Breaking dependencies serves two purposes: **Sensing** (inspecting internal values or side effects we can't otherwise access) and **Separation** (detaching code from its live environment so it can run in a test harness). You almost always need both.
+* You cannot test or sense code if external API or hardware calls are buried deep within a class. In this initial design, the `Sale` class is tightly coupled to the buried display API, preventing sensing and separation.
+    <img width="1336" alt="Screenshot 2026-06-19 173135" src="https://github.com/user-attachments/assets/57a70e64-0cf5-4a7e-8026-7b55e0a20d6c" />
+
+* To begin breaking the dependency, extract the buried API code into a dedicated collaborator class. Here, the display logic is moved to `ArtR56Display`, separating the `Sale` class from the environment details, but sensing is still difficult because they are concrete classes.
+
+<img width="1718"  alt="Screenshot 2026-06-19 173141" src="https://github.com/user-attachments/assets/67640250-5b26-4e92-abd3-7a213ee97b05" />
+
+* To achieve sensing, introduce an interface for the collaborator. This allows you to swap the real class with a **Fake Object** during testing. By refactoring to the `Display` interface, the `Sale` class is fully decoupled from the real hardware.
+<img width="1721"  alt="Screenshot 2026-06-19 173148" src="https://github.com/user-attachments/assets/a8eafff0-bdc0-4b64-b847-6cde07fc1221" />
+
+* A fake object stands in for a real collaborator and has two "sides": it implements the production interface to trick the class under test, but exposes extra testing hooks (like `getLastLine()`) to let the unit test verify what happened.
+* **"That's not really testing" is wrong.** A fake-based test won't catch a hardware bug, but it proves your logic sends the right data. Divide and conquer: test each unit in isolation, then localize bugs faster.
+* When simple fakes are not enough, use **Mock Objects**. Mocks perform assertions internally by defining expectations (`setExpectation`) before running the code and verifying them afterward (`verify`). Use mocks when you'd otherwise need many throwaway fake classes.
