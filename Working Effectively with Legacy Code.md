@@ -46,3 +46,42 @@
 * A fake object stands in for a real collaborator and has two "sides": it implements the production interface to trick the class under test, but exposes extra testing hooks (like `getLastLine()`) to let the unit test verify what happened.
 * **"That's not really testing" is wrong.** A fake-based test won't catch a hardware bug, but it proves your logic sends the right data. Divide and conquer: test each unit in isolation, then localize bugs faster.
 * When simple fakes are not enough, use **Mock Objects**. Mocks perform assertions internally by defining expectations (`setExpectation`) before running the code and verifying them afterward (`verify`). Use mocks when you'd otherwise need many throwaway fake classes.
+
+### Chapter 4 — The Seam Model
+
+* Stop seeing code as a "sheet of text" that you edit directly. Start looking for **seams** — places where you can swap behavior without touching that exact line of code.
+* A **Seam** is a place where you can alter behavior in your program **without editing in that place**. Every seam has an **Enabling Point**: the place where you decide which behavior runs — test or production.
+*  **Why seams matter:** when a method calls an external dependency (database, network, hardware), you cannot run it in a test. Instead of deleting or rewriting the call, you find a seam around it — so you can **neutralize** it during testing (e.g., override it with an empty method) or **replace** it with a fake that records what happened, all without editing the original method.
+
+* Three types of seams:
+
+  **1. Preprocessing Seam (C/C++ only)** — use `#define` to replace a function call before compilation. Enabling point = the `#ifdef TESTING` flag.
+
+  **2. Link Seam** — swap a real library with a stub at build time. Enabling point = the makefile or build script. Always make the difference between test and production environments obvious.
+
+  **3. Object Seam** — pass a different object (subclass or fake) to change which method runs. Enabling point = where you decide which object to create or inject.
+
+* Not every method call is an object seam. If the object is created inside the same method, there is no enabling point — you cannot change which method runs without editing the code. If the object is passed in from outside, it is a seam.
+* **Object seams are the best choice in OOP.** Use link or preprocessing seams only when dependencies are pervasive and nothing else works.
+* Before touching any legacy method with external dependencies, find the seam first. Make the dependency virtual or injectable, write the test, then change safely.
+
+> **The same dependency can expose multiple seams at once:**
+>
+> ```cpp
+> bool CAsyncSslRec::Init() {
+>     ...
+>     if (!m_bFailureSent) {
+>         m_bFailureSent = TRUE;
+>         PostReceiveError(SOCKETCALLBACK, SSL_FAILURE); // 3 seams here
+>     }
+>     ...
+> }
+> ```
+>
+> 1. **Link Seam** — stub library. Enabling point = `makefile`.
+> 2. **Preprocessing Seam** — `#define`. Enabling point = `#ifdef TESTING`.
+> 3. **Object Seam** — `virtual` + override in test subclass. Enabling point = which object you create.
+
+### Chapter 5 — Tools
+
+* Mostly tool-specific guidance (xUnit, FIT, Fitnesse) from 2004. The only lasting takeaway: **automated refactoring tools can silently break behavior** — always have tests before you trust them.
