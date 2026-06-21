@@ -10,4 +10,4 @@ A collection of personal notes from technical books I'm reading. These notes are
 
 | Book | Author | Notes |
 |------|--------|-------|
-| Working Effectively with Legacy Code | Michael Feathers | [Notes](https://github.com/mustafasherbini/book-notes/blob/main/Working%20Effectively%20with%20Legacy%20Code.md) |
+| Working Effectively with Legacy Code | Michael Feathers | [Notes](https://github.com/mustafasherbini/book-notes/tree/main/Working%20Effectively%20with%20Legacy%20Code) |
