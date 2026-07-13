@@ -1,5 +1,3 @@
-# Working Effectively with Legacy Code
-
 ## Part III: Dependency-Breaking Techniques
 
 ### Chapter 25 — Dependency-Breaking Techniques
@@ -40,3 +38,43 @@
 * **Warnings:** This technique **changes the method signature** — all calling code must update. If the new interface is too different from the original, you risk **subtle bugs**. Safety first, beautiful design later — after tests are in place.
 
 * **Hidden benefit:** Creates an **isolation layer** — if the data source changes tomorrow, your method stays untouched. Only the production implementation changes.
+---
+
+### Break Out Method Object
+
+* **The Problem:** A **long method** inside a class that's **hard to instantiate** in a test harness. It uses instance data and methods from the class, so you can't extract it as a static method.
+
+* **The Solution:**
+  1. Create a **new class** — the "method object".
+  2. Constructor takes a **reference to the original class** + the **same parameters** as the original method.
+  3. Turn each parameter into an **instance variable**.
+  4. Create an execution method (`Run()` / `Draw()`) and **copy the method body** into it.
+  5. **Lean on the Compiler** — make needed methods/variables **public** or add **getters**.
+  6. Make the original method **delegate** to the new class.
+  7. If needed → **Extract Interface** to break the dependency on the original class.
+
+> ```csharp
+> // Original method just delegates now
+> public void Draw(List<Point> roots, ColorMatrix colors, List<Point> selection)
+> {
+>     var renderer = new Renderer(this, roots, colors, selection);
+>     renderer.Draw();
+> }
+> ```
+
+* The interface should contain **only the methods the new class actually needs**. If the original has 20 methods and you only need `DrawPoint` — the interface has **one method**.
+
+<img width="550" height="274" alt="25fig01" src="https://github.com/user-attachments/assets/33c0e25e-9da5-4a9c-9720-bc245013bbd5" />
+
+* **Three variations:**
+
+  | Case | What to do |
+  |---|---|
+  | Method uses **nothing** from the original class | Simplest — no reference needed |
+  | Method uses **only data** | Put data in a new class, pass as argument |
+  | Method uses **methods** from the original class | Hardest — need Extract Interface |
+> **My opinion (Mustafa):** The first two variations don't really need a whole new class. Just add a wrapper method in the same class that takes the data as parameters and test it directly. 
+
+* **"We made private things public!"** — Yes, it feels wrong. But it's the **first step** to get tests in place. Once tests exist, refactor safely.
+
+* **This is not the final design.** Over time, break more dependencies → rethink the interface → maybe it becomes a real class. The concept of "Renderer" may evolve from a testing trick into a **real architectural pattern**.
