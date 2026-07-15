@@ -78,3 +78,36 @@
 * **"We made private things public!"** — Yes, it feels wrong. But it's the **first step** to get tests in place. Once tests exist, refactor safely.
 
 * **This is not the final design.** Over time, break more dependencies → rethink the interface → maybe it becomes a real class. The concept of "Renderer" may evolve from a testing trick into a **real architectural pattern**.
+---
+### Definition Completion
+
+* **Language:** C / C++ only — exploits the separation of **declaration** (`.h`) and **definition** (`.cpp`).
+
+* **The Problem:** You want to test a class that depends on another class that's **hard to instantiate**.
+
+* **The Solution:** `#include` the dependency's header in the test file, provide **fake definitions** for its methods, and **exclude** the original `.cpp` from the test build.
+
+> ```cpp
+> #include "LateBindingDispatchDriver.h"
+>
+> CLateBindingDispatchDriver::CLateBindingDispatchDriver() {}
+> CLateBindingDispatchDriver::~CLateBindingDispatchDriver() {}
+> void CLateBindingDispatchDriver::BindName(int id, OLECHAR FAR *name) {}
+>
+> TEST(AddOrder, BOMTreeCtrl)
+> {
+>     CLateBindingDispatchDriver driver;
+>     CBOMTreeCtrl ctrl(&driver);
+>     ctrl.AddOrder(COrderFactory::makeDefault());
+>     LONGS_EQUAL(1, ctrl.OrderCount());
+> }
+> ```
+
+* **You don't implement the whole header** — only what the linker complains about. Build → see errors → add fakes → repeat.
+
+* **Requires a separate test executable** — real and fake definitions can't coexist in the same build (duplicate symbols).
+
+* **Downsides:** Two sets of definitions = maintenance burden, can confuse debuggers.
+
+* **Author's recommendation:** Use **only in the worst cases** as a first step, then replace with proper techniques (e.g., Extract Interface).
+
